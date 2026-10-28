@@ -70,7 +70,7 @@ Velammal Engineering College, Chennai, India
 Bachelor of Engineering (B.E.) | 2022 - 2026
 
 TECHNICAL COMPETENCIES
-${skills.map((s) => `• ${s.name} (${s.level || "Proficient"})`).join("\n")}
+${skills.map((s) => `• ${s.title || s.name} (${s.level || "Proficient"})`).join("\n")}
 
 WORK & TEACHING EXPERIENCE
 ${experiences.map((e) => `${e.position || e.role} | ${e.company} (${e.period || e.startDate || "2025"})\n${(e.responsibilities || e.description || []).join("\n")}`).join("\n\n")}
@@ -196,10 +196,10 @@ ${projects.slice(0, 4).map((p) => `${p.title} (${p.category}): ${p.subtitle || p
             <div className="flex flex-wrap gap-1.5 text-xs text-slate-300">
               {skills.map((s) => (
                 <span
-                  key={s._id || s.id || s.name}
+                  key={s._id || s.id || s.title || s.name}
                   className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-[11px] font-mono"
                 >
-                  <strong className="text-slate-100">{s.name}</strong>
+                  <strong className="text-slate-100">{s.title || s.name}</strong>
                   <span className="text-cyan-400 ml-1">({s.level})</span>
                 </span>
               ))}

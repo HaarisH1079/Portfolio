@@ -126,34 +126,40 @@ export const JOURNEY_TIMELINE = [
 
 export const WHAT_I_DO = [
   {
-    icon: "Code",
-    title: "Software Development",
+    icon: "Terminal",
+    title: "Programming Languages",
+    subtitle: "Software Development",
     description: "Developing clean, modular codebases using Python, TypeScript, C++, and modern engineering design patterns."
   },
   {
-    icon: "Globe",
-    title: "Web Development",
+    icon: "Layout",
+    title: "Frontend Engineering",
+    subtitle: "Web Applications",
     description: "Architecting high-performance web applications with Next.js, React, Node.js, Tailwind CSS, and RESTful APIs."
   },
   {
-    icon: "Bot",
-    title: "AI & Automation",
-    description: "Implementing AI-driven agents, OpenCV computer vision pipelines, and intelligent automated workflows using Gemini and Python."
+    icon: "Server",
+    title: "Backend & Cloud",
+    subtitle: "APIs & Databases",
+    description: "Robust API construction with Node.js and FastAPI, MongoDB document schemas, and cloud microservices."
   },
   {
     icon: "Cpu",
     title: "IoT & Embedded Systems",
+    subtitle: "Physical Computing",
     description: "Engineering real-world physical systems with ESP8266/ESP32, sensors, Wi-Fi networking, and telemetry pipelines."
   },
   {
     icon: "Network",
-    title: "Networking & Infrastructure",
+    title: "Networking & CCNA Concepts",
+    subtitle: "Network Topologies",
     description: "Configuring robust network topologies, VLAN segmentation, routing protocols (OSPF/BGP), NAT/PAT, and packet security."
   },
   {
-    icon: "BarChart3",
-    title: "Data & Analytics",
-    description: "Extracting actionable insights using Pandas, real-time telemetry processing, and financial market data analysis."
+    icon: "Wrench",
+    title: "Tools & Developer Workflow",
+    subtitle: "DevOps & Tooling",
+    description: "Industry-standard development environment, Git branching workflows, Postman API collections, and Linux administration."
   }
 ];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Cpu,
   Plus,
@@ -14,6 +14,17 @@ import {
   Save,
 } from "lucide-react";
 
+const STANDARD_CATEGORIES = [
+  "Programming Languages",
+  "Frontend Engineering",
+  "Backend & Cloud",
+  "IoT & Embedded Systems",
+  "Networking & CCNA Concepts",
+  "Tools & Developer Workflow",
+  "AI & Data",
+  "Database",
+];
+
 export default function AdminSkillsPage() {
   const [skills, setSkills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +36,8 @@ export default function AdminSkillsPage() {
   const [editingSkill, setEditingSkill] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    category: "Programming",
+    title: "",
+    category: "Programming Languages",
     description: "",
     yearsExperience: 2,
     level: "Intermediate",
@@ -34,8 +46,18 @@ export default function AdminSkillsPage() {
     order: 1,
     status: "active",
   });
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const allCategories = useMemo(() => {
+    const set = new Set<string>(STANDARD_CATEGORIES);
+    skills.forEach((s) => {
+      if (s.category) set.add(s.category);
+    });
+    return Array.from(set);
+  }, [skills]);
 
   const fetchSkills = async () => {
     setIsLoading(true);
@@ -67,9 +89,12 @@ export default function AdminSkillsPage() {
 
   const openAddModal = () => {
     setEditingSkill(null);
+    setIsCustomCategory(false);
+    setCustomCategory("");
     setFormData({
       name: "",
-      category: "Programming",
+      title: "",
+      category: "Programming Languages",
       description: "",
       yearsExperience: 2,
       level: "Intermediate",
@@ -83,9 +108,12 @@ export default function AdminSkillsPage() {
 
   const openEditModal = (skill: any) => {
     setEditingSkill(skill);
+    setIsCustomCategory(false);
+    setCustomCategory("");
     setFormData({
-      name: skill.name || "",
-      category: skill.category || "Programming",
+      name: skill.name || skill.title || "",
+      title: skill.title || skill.name || "",
+      category: skill.category || "Programming Languages",
       description: skill.description || "",
       yearsExperience: skill.yearsExperience || 1,
       level: skill.level || "Intermediate",
@@ -101,13 +129,24 @@ export default function AdminSkillsPage() {
     e.preventDefault();
     setIsSaving(true);
 
+    const finalCategory = isCustomCategory && customCategory.trim()
+      ? customCategory.trim()
+      : formData.category;
+
+    const payload = {
+      ...formData,
+      name: (formData.name || formData.title || "").trim(),
+      title: (formData.title || formData.name || "").trim(),
+      category: finalCategory,
+    };
+
     try {
       if (editingSkill) {
         const id = editingSkill._id || editingSkill.id;
         const res = await fetch(`/api/skills/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           const updated = await res.json();
@@ -120,7 +159,7 @@ export default function AdminSkillsPage() {
         const res = await fetch("/api/skills", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           const created = await res.json();
@@ -144,18 +183,6 @@ export default function AdminSkillsPage() {
       }
     } catch {}
   };
-
-  const categories = [
-    "All",
-    "Programming",
-    "Frontend",
-    "Backend",
-    "Database",
-    "IoT / Hardware",
-    "Networking & Systems",
-    "AI & Data",
-    "Tools & DevOps",
-  ];
 
   return (
     <div className="space-y-6">
@@ -210,7 +237,8 @@ export default function AdminSkillsPage() {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 font-mono cursor-pointer"
           >
-            {categories.map((c) => (
+            <option value="All">All Categories ({skills.length})</option>
+            {allCategories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -228,7 +256,7 @@ export default function AdminSkillsPage() {
         <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-slate-800/80 text-xs text-slate-400 space-y-3">
           <Cpu className="w-8 h-8 mx-auto text-slate-600 mb-1" />
           <p className="font-semibold text-slate-300">No skills found</p>
-          <p>Click "Add Skill" above to register a new technical competency.</p>
+          <p>Click &quot;Add Skill&quot; above to register a new technical competency.</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 overflow-hidden">
@@ -236,7 +264,7 @@ export default function AdminSkillsPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Skill</th>
+                  <th className="py-3 px-4">Skill Title</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Level</th>
                   <th className="py-3 px-4">Experience</th>
@@ -251,7 +279,7 @@ export default function AdminSkillsPage() {
                     <tr key={id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3.5 px-4 font-semibold text-white">
                         <div className="flex items-center gap-2">
-                          <span>{skill.name}</span>
+                          <span>{skill.title || skill.name}</span>
                           {skill.featured && (
                             <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                           )}
@@ -333,11 +361,17 @@ export default function AdminSkillsPage() {
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-mono text-slate-300 mb-1">Skill Name</label>
+                  <label className="block font-mono text-slate-300 mb-1">Skill Title / Name</label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        name: e.target.value,
+                        title: e.target.value,
+                      })
+                    }
                     placeholder="e.g. Python, ESP8266..."
                     required
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-emerald-500 font-medium"
@@ -346,20 +380,46 @@ export default function AdminSkillsPage() {
 
                 <div>
                   <label className="block font-mono text-slate-300 mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-emerald-500 font-mono cursor-pointer"
-                  >
-                    <option value="Programming">Programming</option>
-                    <option value="Frontend">Frontend</option>
-                    <option value="Backend">Backend</option>
-                    <option value="Database">Database</option>
-                    <option value="IoT / Hardware">IoT / Hardware</option>
-                    <option value="Networking & Systems">Networking &amp; Systems</option>
-                    <option value="AI & Data">AI &amp; Data</option>
-                    <option value="Tools & DevOps">Tools &amp; DevOps</option>
-                  </select>
+                  {!isCustomCategory ? (
+                    <div className="space-y-1">
+                      <select
+                        value={formData.category}
+                        onChange={(e) => {
+                          if (e.target.value === "__custom__") {
+                            setIsCustomCategory(true);
+                          } else {
+                            setFormData({ ...formData, category: e.target.value });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-emerald-500 font-mono cursor-pointer"
+                      >
+                        {allCategories.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                        <option value="__custom__">+ Enter Custom Category...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="New category name..."
+                        required
+                        className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomCategory(false)}
+                        className="px-2.5 py-1 text-[11px] rounded-lg bg-slate-800 text-slate-400 hover:text-white shrink-0"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

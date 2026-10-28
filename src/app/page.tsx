@@ -16,7 +16,10 @@ import {
   Activity,
   Code,
   FlaskConical,
-  BookOpen
+  BookOpen,
+  Layout,
+  Server,
+  Wrench
 } from "lucide-react";
 import { GithubIcon, LinkedinIcon } from "@/components/SocialIcons";
 import HeroVisual from "@/components/HeroVisual";
@@ -30,18 +33,20 @@ import {
   ProjectsRepo, 
   ExperienceRepo, 
   LabRepo, 
-  BlogRepo 
+  BlogRepo,
+  SkillsRepo 
 } from "@/lib/repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [about, allProjects, allExperiences, allLabs, allPosts] = await Promise.all([
+  const [about, allProjects, allExperiences, allLabs, allPosts, allSkills] = await Promise.all([
     AboutRepo.get(),
     ProjectsRepo.getAll({ status: "published" }),
     ExperienceRepo.getAll({ status: "published" }),
     LabRepo.getAll({ status: "published" }),
     BlogRepo.getAll({ status: "published" }),
+    SkillsRepo.getAll({ status: "active" }),
   ]);
 
   const name = about?.name || "Haarish Nandakumar";
@@ -64,6 +69,36 @@ export default async function Home() {
   const previewExperiences = allExperiences.slice(0, 2);
   const previewLabs = allLabs.slice(0, 3);
   const previewPosts = allPosts.slice(0, 3);
+
+  // Group MongoDB active skills by category
+  const skillsByCategory = new Map<string, any[]>();
+  allSkills.forEach((s: any) => {
+    const cat = s.category || "Programming Languages";
+    if (!skillsByCategory.has(cat)) skillsByCategory.set(cat, []);
+    skillsByCategory.get(cat)!.push(s);
+  });
+
+  const getDomainIcon = (title: string) => {
+    const n = title.toLowerCase();
+    if (n.includes("program") || n.includes("lang")) return <Terminal className="w-5 h-5 text-cyan-400" />;
+    if (n.includes("front") || n.includes("web") || n.includes("ui")) return <Layout className="w-5 h-5 text-indigo-400" />;
+    if (n.includes("back") || n.includes("cloud") || n.includes("server")) return <Server className="w-5 h-5 text-emerald-400" />;
+    if (n.includes("iot") || n.includes("embed") || n.includes("hardware")) return <Cpu className="w-5 h-5 text-amber-400" />;
+    if (n.includes("net") || n.includes("ccna") || n.includes("sys")) return <Network className="w-5 h-5 text-sky-400" />;
+    return <Wrench className="w-5 h-5 text-rose-400" />;
+  };
+
+  const domainCards = WHAT_I_DO.map((item) => {
+    const matchedSkills = skillsByCategory.get(item.title) || [];
+    const topSkillNames = matchedSkills.slice(0, 4).map((s: any) => s.title || s.name);
+    return {
+      title: item.title,
+      subtitle: item.subtitle,
+      description: item.description,
+      skillsCount: matchedSkills.length,
+      topSkills: topSkillNames.join(" • "),
+    };
+  });
 
   return (
     <div className="flex flex-col gap-24 pb-20">
@@ -269,25 +304,39 @@ export default async function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {WHAT_I_DO.map((item, idx) => (
+          {domainCards.map((item, idx) => (
             <div
               key={idx}
-              className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 hover:bg-slate-900/90 transition-all duration-300 group"
+              className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 hover:bg-slate-900/90 transition-all duration-300 group flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:border-cyan-500/50 transition-all">
-                  <Code className="w-5 h-5" />
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-cyan-400 group-hover:scale-110 group-hover:border-cyan-500/50 transition-all">
+                    {getDomainIcon(item.title)}
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {item.skillsCount > 0 ? `${item.skillsCount} competencies` : `DOMAIN 0${idx + 1}`}
+                  </span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  DOMAIN 0{idx + 1}
-                </span>
+                <div className="mb-2">
+                  <h3 className="text-base font-bold text-slate-100 group-hover:text-cyan-400 transition-colors">
+                    {item.title}
+                  </h3>
+                  {item.subtitle && (
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                      {item.subtitle}
+                    </span>
+                  )}
+                </div>
+                {item.topSkills ? (
+                  <p className="text-[11px] font-mono text-cyan-400/90 mb-2 truncate">
+                    {item.topSkills}
+                  </p>
+                ) : null}
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {item.description}
+                </p>
               </div>
-              <h3 className="text-base font-bold text-slate-100 group-hover:text-cyan-400 transition-colors mb-2">
-                {item.title}
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {item.description}
-              </p>
             </div>
           ))}
         </div>

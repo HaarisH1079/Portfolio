@@ -18,9 +18,12 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  if (!body.name) {
-    return NextResponse.json({ error: "Skill name is required" }, { status: 400 });
+  const skillTitle = body.name || body.title;
+  if (!skillTitle) {
+    return NextResponse.json({ error: "Skill name or title is required" }, { status: 400 });
   }
+  body.name = skillTitle;
+  body.title = skillTitle;
 
   const created = await SkillsRepo.create(body);
   return NextResponse.json(created, { status: 201 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
@@ -63,10 +64,15 @@ export default function Navbar({ onOpenTerminal }: NavbarProps) {
           <div className="flex items-center gap-3">
             <Link href="/" className="group flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-600 p-[1px] shadow-sm shadow-cyan-500/30 group-hover:shadow-cyan-500/50 transition-all">
-                <div className="w-full h-full bg-[#090d16] rounded-[7px] flex items-center justify-center">
-                  <span className="font-mono font-bold text-sm text-cyan-400 group-hover:text-cyan-300">
-                    &lt;HN/&gt;
-                  </span>
+                <div className="w-full h-full bg-[#090d16] rounded-[7px] flex items-center justify-center overflow-hidden">
+                  <Image
+                    src="/HLOGO.png"
+                    alt="Haarish Nandakumar Logo"
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-contain p-0.5 group-hover:scale-105 transition-transform"
+                    priority
+                  />
                 </div>
               </div>
               <div className="flex flex-col">

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ISkill extends Document {
   name: string;
+  title?: string;
   category: string;
   description?: string;
   yearsExperience?: number;
@@ -18,7 +19,8 @@ export interface ISkill extends Document {
 const SkillSchema = new Schema<ISkill>(
   {
     name: { type: String, required: true },
-    category: { type: String, required: true, default: "Programming" },
+    title: { type: String, default: "" },
+    category: { type: String, required: true, default: "Programming Languages" },
     description: { type: String, default: "" },
     yearsExperience: { type: Number, default: 1 },
     level: {

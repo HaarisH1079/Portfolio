@@ -594,52 +594,117 @@ export const ProjectsRepo = {
   },
 };
 
+function normalizeSkillCategory(cat?: string): string {
+  if (!cat) return "Programming Languages";
+  const trimmed = cat.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === "programming" || lower === "programming language") return "Programming Languages";
+  if (lower === "frontend" || lower === "front-end") return "Frontend Engineering";
+  if (lower === "backend" || lower === "back-end") return "Backend & Cloud";
+  if (lower === "iot" || lower === "iot / hardware" || lower === "hardware") return "IoT & Embedded Systems";
+  if (lower === "networking" || lower === "networking & systems") return "Networking & CCNA Concepts";
+  if (lower === "tools" || lower === "tools & devops" || lower === "devops") return "Tools & Developer Workflow";
+  return trimmed;
+}
+
 export const SkillsRepo = {
   async getAll(filter: { category?: string; search?: string; status?: string } = {}) {
     const { isConnected } = await connectToDatabase();
     if (isConnected) {
       const query: any = { isDeleted: false };
-      if (filter.category && filter.category !== "All") query.category = filter.category;
+      if (filter.category && filter.category !== "All") {
+        const norm = normalizeSkillCategory(filter.category);
+        const aliases = Array.from(new Set([filter.category, norm]));
+        query.category = { $in: aliases.map((a) => new RegExp(`^${a}$`, "i")) };
+      }
       if (filter.status && filter.status !== "All") query.status = filter.status;
       if (filter.search) {
-        query.name = { $regex: filter.search, $options: "i" };
+        const sQuery = { $regex: filter.search, $options: "i" };
+        query.$or = [{ name: sQuery }, { title: sQuery }, { description: sQuery }];
       }
       const list = await Skill.find(query).sort({ order: 1 });
-      return list.map((item) => item.toObject());
+      return list.map((item) => {
+        const obj = item.toObject();
+        obj.title = obj.title || obj.name;
+        obj.name = obj.name || obj.title;
+        obj.category = normalizeSkillCategory(obj.category);
+        return obj;
+      });
     }
 
     let items = memStore.skills.filter((s) => !s.isDeleted);
     if (filter.category && filter.category !== "All") {
-      items = items.filter((s) => s.category.toLowerCase() === filter.category?.toLowerCase());
+      const norm = normalizeSkillCategory(filter.category).toLowerCase();
+      items = items.filter((s) => {
+        const sCatNorm = normalizeSkillCategory(s.category).toLowerCase();
+        return sCatNorm === norm || s.category.toLowerCase() === filter.category?.toLowerCase();
+      });
     }
     if (filter.status && filter.status !== "All") {
       items = items.filter((s) => s.status === filter.status);
     }
     if (filter.search) {
       const q = filter.search.toLowerCase();
-      items = items.filter((s) => s.name.toLowerCase().includes(q));
+      items = items.filter(
+        (s) =>
+          (s.name && s.name.toLowerCase().includes(q)) ||
+          (s.title && s.title.toLowerCase().includes(q)) ||
+          (s.description && s.description.toLowerCase().includes(q))
+      );
     }
-    return items.sort((a, b) => a.order - b.order);
+    return items
+      .map((s) => ({
+        ...s,
+        title: s.title || s.name,
+        name: s.name || s.title,
+        category: normalizeSkillCategory(s.category),
+      }))
+      .sort((a, b) => a.order - b.order);
   },
   async getById(id: string) {
     const { isConnected } = await connectToDatabase();
     if (isConnected) {
       try {
         const doc = await Skill.findOne({ _id: id, isDeleted: false });
-        if (doc) return doc.toObject();
+        if (doc) {
+          const obj = doc.toObject();
+          obj.title = obj.title || obj.name;
+          obj.name = obj.name || obj.title;
+          obj.category = normalizeSkillCategory(obj.category);
+          return obj;
+        }
       } catch {}
     }
-    return memStore.skills.find((s) => (s._id === id || s.id === id) && !s.isDeleted) || null;
+    const mem = memStore.skills.find((s) => (s._id === id || s.id === id) && !s.isDeleted) || null;
+    if (mem) {
+      return {
+        ...mem,
+        title: mem.title || mem.name,
+        name: mem.name || mem.title,
+        category: normalizeSkillCategory(mem.category),
+      };
+    }
+    return null;
   },
   async create(data: any) {
+    const skillData = { ...data };
+    skillData.name = skillData.name || skillData.title || "";
+    skillData.title = skillData.title || skillData.name || "";
+    if (skillData.category) {
+      skillData.category = normalizeSkillCategory(skillData.category);
+    }
+
     const { isConnected } = await connectToDatabase();
     if (isConnected) {
-      const doc = await Skill.create(data);
-      await logActivity("create", "skill", `Skill "${data.name}" added`);
-      return doc.toObject();
+      const doc = await Skill.create(skillData);
+      const obj = doc.toObject();
+      obj.title = obj.title || obj.name;
+      obj.name = obj.name || obj.title;
+      await logActivity("create", "skill", `Skill "${skillData.title || skillData.name}" added`);
+      return obj;
     }
     const newDoc = {
-      ...data,
+      ...skillData,
       _id: `skill_${Date.now()}`,
       id: `skill_${Date.now()}`,
       isDeleted: false,
@@ -647,22 +712,36 @@ export const SkillsRepo = {
       updatedAt: new Date().toISOString(),
     };
     memStore.skills.push(newDoc);
-    await logActivity("create", "skill", `Skill "${data.name}" added`);
+    await logActivity("create", "skill", `Skill "${skillData.title || skillData.name}" added`);
     return newDoc;
   },
   async update(id: string, data: any) {
+    const skillData = { ...data };
+    if (skillData.name || skillData.title) {
+      skillData.name = skillData.name || skillData.title;
+      skillData.title = skillData.title || skillData.name;
+    }
+    if (skillData.category) {
+      skillData.category = normalizeSkillCategory(skillData.category);
+    }
+
     const { isConnected } = await connectToDatabase();
     if (isConnected) {
-      const doc = await Skill.findByIdAndUpdate(id, data, { new: true });
+      const doc = await Skill.findByIdAndUpdate(id, skillData, { new: true });
       if (doc) {
-        await logActivity("update", "skill", `Skill "${doc.name}" updated`);
-        return doc.toObject();
+        const obj = doc.toObject();
+        obj.title = obj.title || obj.name;
+        obj.name = obj.name || obj.title;
+        await logActivity("update", "skill", `Skill "${obj.title || obj.name}" updated`);
+        return obj;
       }
     }
     const idx = memStore.skills.findIndex((s) => s._id === id || s.id === id);
     if (idx !== -1) {
-      memStore.skills[idx] = { ...memStore.skills[idx], ...data, updatedAt: new Date().toISOString() };
-      await logActivity("update", "skill", `Skill "${memStore.skills[idx].name}" updated`);
+      memStore.skills[idx] = { ...memStore.skills[idx], ...skillData, updatedAt: new Date().toISOString() };
+      memStore.skills[idx].title = memStore.skills[idx].title || memStore.skills[idx].name;
+      memStore.skills[idx].name = memStore.skills[idx].name || memStore.skills[idx].title;
+      await logActivity("update", "skill", `Skill "${memStore.skills[idx].title || memStore.skills[idx].name}" updated`);
       return memStore.skills[idx];
     }
     return null;

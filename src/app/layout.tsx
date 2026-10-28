@@ -39,6 +39,14 @@ export const metadata: Metadata = {
     description: "Bridging the gap between software engineering, physical hardware/IoT, AI agents, and network infrastructure.",
     siteName: "Haarish Nandakumar Portfolio",
   },
+  icons: {
+    icon: [
+      { url: "/HLOGO.png" },
+      { url: "/icon.png" },
+    ],
+    shortcut: "/HLOGO.png",
+    apple: "/HLOGO.png",
+  },
   twitter: {
     card: "summary_large_image",
     title: "Haarish Nandakumar | Software Developer & Technology Builder",
