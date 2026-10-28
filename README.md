@@ -76,6 +76,4 @@ npm run start
 
 ---
 
-## 🔒 Admin Credentials (Demo Mode)
-- **URL**: `/admin`
-- **Passcode**: `admin123` or `demo` (or click the *1-Click Demo Login* button)
+
